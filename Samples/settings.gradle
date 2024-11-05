@@ -1,0 +1,70 @@
+rootProject.name = 'camera-kit-samples-root'
+
+//dev>
+//See: https://discuss.gradle.org/t/how-to-remove-gitignore-from-defaultexcludes-for-whole-multi-module-project/35187/4
+org.apache.tools.ant.DirectoryScanner.removeDefaultExclude("**/.gitignore")
+
+ext {
+    isCi = System.getenv('CI') != null || System.getenv('JENKINS_HOME') != null
+}
+
+buildscript {
+    repositories {
+        maven {
+            url 'gcs://snapengine-maven-publish/releases'
+            mavenCentral()
+        }
+    }
+
+    dependencies {
+        //noinspection GradleDynamicVersion
+        classpath 'com.snapchat.gradle:gradle-build-cache-gcs-plugin:0.5.4+305cdf1.188'
+    }
+
+    configurations.classpath {
+        resolutionStrategy {
+            force 'com.google.guava:guava:28.1-jre'
+        }
+    }
+}
+
+apply plugin: com.snapchat.gradle.caching.GcsBuildCachePlugin
+
+buildCache {
+    remote(com.snapchat.gradle.caching.GcsBuildCache) {
+        url = 'gcs://snapchat-gradle-build-cache/Snapchat/camera-kit-distribution/7.5.1'
+        projectId = 'snapchat-build-artifacts'
+        push = isCi
+    }
+}
+//<dev
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    versionCatalogs {
+        libs {
+            def kotlin = version('kotlin', '1.8.0')
+            plugin('kotlin', 'org.jetbrains.kotlin.jvm').versionRef(kotlin)
+            plugin('ktlint', 'org.jlleitschuh.gradle.ktlint').version('11.0.0')
+        }
+    }
+}
+
+def include(String moduleName, String relativePath) {
+    include(moduleName)
+    project(moduleName).projectDir = new File(rootDir, relativePath)
+}
+
+include ':camerakit-sample-full'
+include ':camerakit-sample-simple'
+include ':camerakit-sample-custom-video'
+include ':camerakit-sample-custom-input'
+include ':camerakit-sample-custom-carousel'
+include ':camerakit-sample-basic'
+include(':camerakit-sample-dynamic-app-host-apk', 'camerakit-sample-dynamic/app-host-apk')
+include(':camerakit-sample-dynamic-app-host-dfm', 'camerakit-sample-dynamic/app-host-dfm')
+include(':camerakit-sample-dynamic-plugin-shared', 'camerakit-sample-dynamic/plugin-shared')
+include(':camerakit-sample-dynamic-plugin-apk', 'camerakit-sample-dynamic/plugin-apk')
+include(':camerakit_sample_dynamic_plugin_dfm', 'camerakit-sample-dynamic/plugin-dfm')

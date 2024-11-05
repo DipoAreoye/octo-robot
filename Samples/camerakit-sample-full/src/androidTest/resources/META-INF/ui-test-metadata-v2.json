@@ -1,0 +1,67 @@
+{
+  "test-suites": {
+    "camerakit": {
+      "issue-tracker-key": "LOOK",
+      "contact-details-mention": [
+        {
+          "name": "Snapchat/camera-platform-android"
+        },
+        {
+          "name": "jokubas-dargis"
+        }
+      ],
+      "contact-details-email": [
+        {
+          "address": "jokubas@snap.com"
+        }
+      ],
+      "test-cases": [
+        {
+          "device-selector": {
+            "name": "dreamlte",
+            "model": "SM-G950F",
+            "os-version-constraint": [
+              8
+            ]
+          },
+          "priority": 0,
+          "impact": 50,
+          "fully-qualified-name": "com.snap.camerakit.sample.MainActivityTest#launch_rotateScreen_noCrash",
+          "short-class-name": "MainActivityTest",
+          "full-class-name": "com.snap.camerakit.sample.MainActivityTest",
+          "method-name": "launch_rotateScreen_noCrash"
+        },
+        {
+          "device-selector": {
+            "name": "dreamlte",
+            "model": "SM-G950F",
+            "os-version-constraint": [
+              8
+            ]
+          },
+          "priority": 0,
+          "impact": 50,
+          "fully-qualified-name": "com.snap.camerakit.sample.MainActivityTest#launch_switchCamera_noCrash",
+          "short-class-name": "MainActivityTest",
+          "full-class-name": "com.snap.camerakit.sample.MainActivityTest",
+          "method-name": "launch_switchCamera_noCrash"
+        },
+        {
+          "device-selector": {
+            "name": "dreamlte",
+            "model": "SM-G950F",
+            "os-version-constraint": [
+              8
+            ]
+          },
+          "priority": 0,
+          "impact": 50,
+          "fully-qualified-name": "com.snap.camerakit.sample.SessionTest#openSession_applyLens_outputBitmap",
+          "short-class-name": "SessionTest",
+          "full-class-name": "com.snap.camerakit.sample.SessionTest",
+          "method-name": "openSession_applyLens_outputBitmap"
+        }
+      ]
+    }
+  }
+}
