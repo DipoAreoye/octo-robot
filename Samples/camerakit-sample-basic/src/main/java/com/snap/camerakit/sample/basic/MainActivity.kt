@@ -26,8 +26,8 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
     private var permissionRequest: Closeable? = null
 
     companion object {
-        const val LENS_GROUP_ID = "REPLACE-THIS-WITH-YOUR-OWN-APP-SPECIFIC-VALUE"
-        const val LENS_ID = "REPLACE-THIS-WITH-YOUR-OWN-APP-SPECIFIC-VALUE"
+        const val LENS_GROUP_ID = "5685839489138688"
+        const val LENS_ID = "2af3fc8e-d952-4089-84fa-905f5a2758e3"
     }
 
     // Initialize a permission request launcher
