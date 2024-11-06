@@ -128,7 +128,7 @@ task eject(type: Copy) {
 
     from rootProject.projectDir
     into outputDir
-    exclude gitignoreToList(file('.gitignore'))
+    exclude gitignoreToList(file('../.gitignore'))
     exclude 'eject.gradle'
     exclude '**/*proguard-mapping*'
     exclude 'jarRepositories.xml'
