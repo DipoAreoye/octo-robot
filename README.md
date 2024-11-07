@@ -21,6 +21,7 @@ Camera Kit brings the power of Snap's AR platform to your websites and mobile ap
  <img src="https://github.com/user-attachments/assets/2ed8522c-280a-4694-bc3e-79ce450fb0a0" width="9%" aly="vfx">
  <img src="https://github.com/user-attachments/assets/c4097e49-855f-4c94-8a35-2753f7bcbd83" width="9%" alt="landmarkers" />
 </p>
+
 ## Features
 
 ### AR Capabilities
@@ -46,7 +47,7 @@ Camera Kit brings the power of Snap's AR platform to your websites and mobile ap
 
 ### Configuration
 
-All of the Camera Kit artifacts are published under a single version (see [CHANGELOG](../../CHANGELOG.md) for a summary of changes in each release) and it is possible to pick and choose the dependencies necessary for your specific project:
+All of the Camera Kit artifacts are published under a single version and it is possible to pick and choose the dependencies necessary for your specific project:
 
 ```groovy
     implementation "com.snap.camerakit:camerakit:$cameraKitVersion"
@@ -54,7 +55,7 @@ All of the Camera Kit artifacts are published under a single version (see [CHANG
     implementation "com.snap.camerakit:support-camerax:$cameraKitVersion"
 ```
 
-In order for Camera Kit to be able to communicate with remote services to get content such as lenses, app needs to provide Camera Kit its unique "API token", this can be found at [Snap Developer Portal](https://devportal.snap.com/manage/). The easiest way to do this is to define the token within the app's [AndroidManifest.xml](./camerakit-sample-basic/src/main/AndroidManifest.xml):
+In order for Camera Kit to be able to communicate with remote services to get content such as lenses, app needs to provide Camera Kit its unique "API token", this can be found at [Snap Developer Portal](https://devportal.snap.com/manage/). The easiest way to do this is to define the token within the app's [AndroidManifest.xml](./Samples/camerakit-sample-basic/src/main/AndroidManifest.xml):
 
 ```xml
 <application
@@ -64,7 +65,7 @@ In order for Camera Kit to be able to communicate with remote services to get co
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
      
-        <meta-data android:name="com.snap.camerakit.api.token" android:value="${cameraKitApiToken}" />
+        <meta-data android:name="com.snap.camerakit.api.token" android:value="REPLACE-THIS-WITH-YOUR-OWN-APP-SPECIFIC-VALUE" />
 
 </application>
 ```
@@ -80,127 +81,75 @@ android {
 }
 ```
 
-*For more information, see build configuration in `camerakit-sample-full` [build.gradle](./camerakit-sample-full/build.gradle).*
+*For more information, see build configuration in `camerakit-sample-full` [build.gradle](./Samples/camerakit-sample-full/build.gradle).*
 
 ## Usage
 
-**Option 1**: You can use `Session` interface which is the main point of entry to all of the Camera Kit SDK features. `Session` can be built using a traditional builder which allows to customize certain aspects of the SDK such as lenses data sources etc. `Session` builder accepts a `ViewStub` that is used to inflate default CameraKit UI elements into your app; you could use `CameraLayout` helper that covers the most common Camera Kit use cases and takes care of runtime permissions. Please check [`camerakit-sample-basic`](./camerakit-sample-basic) for the example usage.
-
-To obtain a new `Session`, use of one of the provided static or extension builder methods:
+### Initializing Image Processor and Preview
 
 ```kotlin
-import com.snap.camerakit.Session
-import com.snap.camerakit.invoke
+    import com.snap.camerakit.support.camerax.CameraXImageProcessorSource
 
-private lateinit var cameraKitSession: Session
+    var imageProcessorSource = CameraXImageProcessorSource(
+            context = this, lifecycleOwner = this
+    )
 
-cameraKitSession = Session(this) { // <- Lambda with Session.Builder as receiver 
-    
-    imageProcessorSource(imageProcessorSource)
+    imageProcessorSource.startPreview(true) // true = front camera , false = back
+```
 
-    attachTo(findViewById(R.id.camera_kit_stub)) // <- ViewStub layout ID
+### Initializing Camera Kit Session
 
-    configureLenses { builder ->
+```kotlin
+    var cameraKitSession = Session(context = this) {
+        imageProcessorSource(imageProcessorSource)
+        attachTo(findViewById(R.id.camera_kit_stub))
+    }
+```
 
-        builder.configureCache { cacheConfig ->
-            cacheConfig.lensContentMaxSize = 1024 * 1024 * 100
+### Applying AR Lens
+You can find lens group IDs and specific lens IDs on [My Lenses](https://my-lenses.snapchat.com/) site
+```kotlin
+    cameraKitSession.apply {
+        lenses.repository.observe(
+            LensesComponent.Repository.QueryCriteria.ById(LENS_ID, LENS_GROUP_ID)
+        ) { result ->
+            result.whenHasFirst { requestedLens ->
+                lenses.processor.apply(requestedLens)
+            }
         }
     }
-}
 ```
-**Option 2**: You can also simply launch Camera Kit's support `CameraActivity`, using referenceUI components such as the lens carousel and the camera button with recording functionality . It exposes all the possible start parameters through the `CameraActivity.Configuration` class which is passed to an `ActivityResultLauncher`. Please check [`camerakit-sample-simple`](./camerakit-sample-simple) for the example usage.
 
 ### Lifecycle
 
 `Session` instance is typically shared within a single Android application, service or activity lifecycle scope as `Session` is costly in terms of memory and cpu resources it requires to operate. Once done with a `Session`, It is **essential** to dispose it using `Session#close` method which releases all the acquired resources in Camera Kit safe manner. 
 
-The basic use of Camera Kit and its lifecycle can be presented as:
-
-![usage_lifecycle](.doc/usage_lifecycle.png)
-
-
-
-### Java or Kotlin?
-
-The `camerakit-api` and the base `camerakit` modules are designed to be fully Java compatible therefore it does not require Kotlin standard library nor its toolchain to be available in pure Java projects. On the other hand, Kotlin projects are advised to use the `camerakit-kotlin` for official extensions.
-
-Here is an example of applying a lens with Camera Kit in Java:
-
-```java
-public final class BasicActivity extends AppCompatActivity implements LifecycleOwner {
-
-    private Session cameraKitSession;
-
-    @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        setContentView(R.layout.activity_main);
-
-        // Camera Kit support implementation of ImageProcessor that is backed by CameraX library:
-        // https://developer.android.com/training/camerax
-        CameraXImageProcessorSource imageProcessorSource = new CameraXImageProcessorSource( 
-            this /*context*/, this /*lifecycleOwner*/
-        );x
-        imageProcessorSource.startPreview(true /*cameraFacingFront*/);
-
-        cameraKitSession = Sessions.newBuilder(this)
-                .imageProcessorSource(imageProcessorSource)
-                .attachTo(findViewById(R.id.camerakit_stub))
-                .build();
+```kotlin
+    override fun onDestroy() {
+        cameraKitSession.close()
+        super.onDestroy()
     }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        // Fetch lenses from repository and apply them
-        // Replace LENS_GROUP_ID with Lens Group ID from https://camera-kit.snapchat.com
-        cameraKitSession.getLenses().getRepository().get(new Available(LENS_GROUP_ID), available -> {
-            Log.d(TAG, "Available lenses: " + available);
-            Lenses.whenHasFirst(available, lens -> cameraKitSession.getLenses().getProcessor().apply(lens, result -> {
-                Log.d(TAG,  "Apply lens [" + lens + "] success: " + result);
-            }));
-        });
-    }
-
-    @Override
-    protected void onPause() {
-        cameraKitSession.getLenses().getProcessor().clear(result -> {
-            Log.d(TAG,  "Clear lenses success: " + result);
-        });
-        super.onPause();
-    }
-
-    @Override
-    protected void onDestroy() {
-        cameraKitSession.close();
-        super.onDestroy();
-    }
-}
 ```
 
 ### Samples
 
 This project includes several sample apps that demonstrate different approaches to integrating the Camera Kit SDK:
 
-- [`camerakit-sample-full`](./camerakit-sample-full) contains a fully functioning camera capture with lenses and preview flow.
-- [`camerakit-sample-custom-video`](./camerakit-sample-custom-video) demonstrates how to set up a custom video/audio encoding and audio source implementation.
-- [`camerakit-sample-custom-input`](./camerakit-sample-custom-input) demonstrates how to setup a custom input to the Camera Kit's processing pipeline.
-- [`camerakit-sample-simple`](./camerakit-sample-simple) demonstrates how to setup a simple, Camera Kit powered, camera capture flow via the standalone, batteries-included `CameraActivity`.
-- [`camerakit-sample-dynamic`](./camerakit-sample-dynamic) demonstrates how to dynamically load Camera Kit SDK as a dynamic feature module (DFM) as well as a standalone apk.
-- [`camerakit-sample-custom-carousel`](./camerakit-sample-custom-carousel) demonstrates how to provide your own carousel and preview screen to Camera Kit.
-- [`camerakit-sample-basic`](./camerakit-sample-basic) demonstrates simplest and bare minimum 
+- [`camerakit-sample-full`](./Samples/camerakit-sample-full) contains a fully functioning camera capture with lenses and preview flow.
+- [`camerakit-sample-custom-video`](./Samples/camerakit-sample-custom-video) demonstrates how to set up a custom video/audio encoding and audio source implementation.
+- [`camerakit-sample-custom-input`](./Samples/camerakit-sample-custom-input) demonstrates how to setup a custom input to the Camera Kit's processing pipeline.
+- [`camerakit-sample-simple`](./Samples/camerakit-sample-simple) demonstrates how to setup a simple, Camera Kit powered, camera capture flow via the standalone, batteries-included `CameraActivity`.
+- [`camerakit-sample-dynamic`](./Samples/camerakit-sample-dynamic) demonstrates how to dynamically load Camera Kit SDK as a dynamic feature module (DFM) as well as a standalone apk.
+- [`camerakit-sample-custom-carousel`](./Samples/camerakit-sample-custom-carousel) demonstrates how to provide your own carousel and preview screen to Camera Kit.
+- [`camerakit-sample-basic`](./Samples/camerakit-sample-basic) demonstrates simplest and bare minimum 
     way to integrate Camera Kit.
 
 ## Development
 
 ### Push To Device (P2D)
 
-Applications can receive lenses from Lens Studio using the P2D feature. See [P2D Integration](./P2D.md).
+Applications can receive lenses from Lens Studio using the P2D feature. See [P2D Integration](https://developers.snap.com/camera-kit/guides/mobile-customization/in-app-lens-testing).
 
-### Profiling
-
-Applications can monitor the Camera Kit performance using the Profiling extension. See [Profiling](./Profiling.md).
 
 ## Troubleshooting
 
@@ -218,6 +167,5 @@ The following is a list of common issues and suggestions on how to troubleshoot 
 
 - Attach debugger to your app, enable Java exception breakpoints and build a `Session` while checking that there are no unexpected exceptions with stacktraces related to Camera Kit.
 - Attach debugger to your app, pause all threads and export their state into a text file - check that there are no deadlocked threads related to Camera Kit.
-- Capture Android bug report with `adb bugreport` and send it to Camera Kit developers for further investigation.
 - Check Camera Kit [FAQ page](https://docs.snap.com/camera-kit/faq).
-- Reach out to your Camera Kit partner at Snap or fill out [this form](https://docs.snap.com/camera-kit/support) to reach us directly.
+- Need extra support? [Check our support page](https://docs.snap.com/camera-kit/support)
